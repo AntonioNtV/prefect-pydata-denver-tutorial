@@ -1,11 +1,13 @@
 import requests
 import json
+import sqlite3
 from collections import namedtuple
 from contextlib import closing
-import sqlite3
+from datetime import datetime, timedelta
 
 from prefect import task, Flow
 from prefect.tasks.database.sqlite import SQLiteScript
+from prefect.schedules import IntervalSchedule
 
 DATABASE_NAME='cfpbcomplaints.db'
 
@@ -51,13 +53,18 @@ def store_complaints(parsed_complaint_data):
             conn.commit()
 
 
-with Flow("etl flow") as flow:
-    db_table = create_table()
-    raw_complaint_data = get_complaint_data()
-    parsed_complaint_data = parse_complaint_data(raw_complaint_data)
-    populated_table = store_complaints(parsed_complaint_data)
-    populated_table.set_upstream(db_table) # db_table need to happen before populated_table
 
-flow.visualize()    
+def build_flow(schedule=None):
+    with Flow("etl flow", schedule=schedule) as flow:
+        db_table = create_table()
+        raw_complaint_data = get_complaint_data()
+        parsed_complaint_data = parse_complaint_data(raw_complaint_data)
+        populated_table = store_complaints(parsed_complaint_data)
+        populated_table.set_upstream(db_table) # db_table need to happen before populated_table
+    return flow
+
+schedule = IntervalSchedule(interval=timedelta(minutes=1))
+etl_flow = build_flow(schedule)
+etl_flow.run()    
 
 
