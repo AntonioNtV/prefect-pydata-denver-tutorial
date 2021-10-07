@@ -73,7 +73,7 @@ def build_flow(schedule=None):
     return flow
 
 schedule = IntervalSchedule(interval=timedelta(minutes=1))
-etl_flow = build_flow()
+etl_flow = build_flow(schedule)
 etl_flow.run()    
 
 
