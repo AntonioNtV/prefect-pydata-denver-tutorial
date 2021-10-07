@@ -12,5 +12,6 @@ def prefect_say(s: str):
 with Flow("my_first_flow") as f:
     r = hello_world()
     s2 = prefect_say(r)
-
+    
+f.visualize()
 f.run()
