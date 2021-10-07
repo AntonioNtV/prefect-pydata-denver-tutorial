@@ -63,7 +63,7 @@ def store_complaints(parsed_complaint_data):
 
 
 def build_flow(schedule=None):
-    with Flow("etl flow", schedule=schedule) as flow:
+    with Flow("etl flow", schedule=schedule, state_handlers=[alert_failed]) as flow:
         db_table = create_table()
         raw_complaint_data = get_complaint_data()
         parsed_complaint_data = parse_complaint_data(raw_complaint_data)
