@@ -1,7 +1,7 @@
-from prefect.core.flow import cache
 import requests
 import json
 import sqlite3
+from logger import logger
 from collections import namedtuple
 from contextlib import closing
 from datetime import timedelta
@@ -18,8 +18,13 @@ create_table = SQLiteScript(
     script='CREATE TABLE IF NOT EXISTS complaint (timestamp TEXT, state TEXT, product TEXT, company TEXT, complaint_what_happened TEXT)'
 )
 
+def alert_failed(obj, old_state, new_state):
+    if new_state.is_failed():
+        logger("Failed!")
+
+
 ## extract
-@task(cache_for=timedelta(days=1))
+@task(cache_for=timedelta(days=1), state_handlers=[alert_failed])
 def get_complaint_data():
     r = requests.get("https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/", params={'size':10})
     response_json = json.loads(r.text)
@@ -28,8 +33,9 @@ def get_complaint_data():
 
 
 ## transform
-@task
+@task(state_handlers=[alert_failed])
 def parse_complaint_data(raw_complaint_data):
+    raise Exception
     complaints = []
     Complaint = namedtuple('Complaint', ['data_received', 'state', 'product', 'company', 'complaint_what_happened'])
     for row in raw_complaint_data:
@@ -45,7 +51,7 @@ def parse_complaint_data(raw_complaint_data):
     return complaints
 
 ## load
-@task
+@task(state_handlers=[alert_failed])
 def store_complaints(parsed_complaint_data):
     insert_cmd = "INSERT INTO complaint VALUES (?, ?, ?, ?, ?)"
 
@@ -66,7 +72,7 @@ def build_flow(schedule=None):
     return flow
 
 schedule = IntervalSchedule(interval=timedelta(minutes=1))
-etl_flow = build_flow(schedule)
+etl_flow = build_flow()
 etl_flow.run()    
 
 
