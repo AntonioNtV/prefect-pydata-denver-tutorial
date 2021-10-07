@@ -1,9 +1,10 @@
+from prefect.core.flow import cache
 import requests
 import json
 import sqlite3
 from collections import namedtuple
 from contextlib import closing
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from prefect import task, Flow
 from prefect.tasks.database.sqlite import SQLiteScript
@@ -18,10 +19,11 @@ create_table = SQLiteScript(
 )
 
 ## extract
-@task
+@task(cache_for=timedelta(days=1))
 def get_complaint_data():
     r = requests.get("https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/", params={'size':10})
     response_json = json.loads(r.text)
+    print("I actually requested this time!")
     return response_json['hits']['hits']
 
 
