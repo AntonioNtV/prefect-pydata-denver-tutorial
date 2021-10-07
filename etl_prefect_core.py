@@ -2,7 +2,7 @@ import requests
 import json
 import sqlite3
 import pathlib
-from logger import logger
+import prefect
 from collections import namedtuple
 from contextlib import closing
 from datetime import timedelta
@@ -22,7 +22,8 @@ create_table = SQLiteScript(
 
 def alert_failed(obj, old_state, new_state):
     if new_state.is_failed():
-        logger("Failed!")
+        logger = prefect.context.get('logger')
+        logger.info("I actually requested this time!")
 
 
 ## extract
@@ -30,7 +31,8 @@ def alert_failed(obj, old_state, new_state):
 def get_complaint_data():
     r = requests.get("https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/", params={'size':10})
     response_json = json.loads(r.text)
-    print("I actually requested this time!")
+    logger = prefect.context.get('logger')
+    logger.info("I actually requested this time!")
     return response_json['hits']['hits']
 
 
@@ -74,6 +76,6 @@ def build_flow(schedule=None):
 
 schedule = IntervalSchedule(interval=timedelta(minutes=1))
 etl_flow = build_flow(schedule)
-etl_flow.run()    
+etl_flow.register(project_name='ETL FIRST PROJECT WITH PREFECT')    
 
 
