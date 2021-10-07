@@ -1,7 +1,7 @@
-from prefect.engine import signals
 import requests
 import json
 import sqlite3
+import pathlib
 from logger import logger
 from collections import namedtuple
 from contextlib import closing
@@ -10,6 +10,7 @@ from datetime import timedelta
 from prefect import task, Flow
 from prefect.tasks.database.sqlite import SQLiteScript
 from prefect.schedules import IntervalSchedule
+from prefect.engine.results import LocalResult
 
 DATABASE_NAME='cfpbcomplaints.db'
 
@@ -25,7 +26,7 @@ def alert_failed(obj, old_state, new_state):
 
 
 ## extract
-@task(cache_for=timedelta(days=1), state_handlers=[alert_failed])
+@task(cache_for=timedelta(days=1), state_handlers=[alert_failed], result=LocalResult(dir="{current_path}/results".format(current_path=pathlib.Path(__file__).parent.resolve())))
 def get_complaint_data():
     r = requests.get("https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/", params={'size':10})
     response_json = json.loads(r.text)
@@ -36,7 +37,6 @@ def get_complaint_data():
 ## transform
 @task(state_handlers=[alert_failed])
 def parse_complaint_data(raw_complaint_data):
-    raise signals.SUCCESS
     complaints = []
     Complaint = namedtuple('Complaint', ['data_received', 'state', 'product', 'company', 'complaint_what_happened'])
     for row in raw_complaint_data:
