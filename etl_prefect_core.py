@@ -1,3 +1,4 @@
+from prefect.engine import signals
 import requests
 import json
 import sqlite3
@@ -35,7 +36,7 @@ def get_complaint_data():
 ## transform
 @task(state_handlers=[alert_failed])
 def parse_complaint_data(raw_complaint_data):
-    raise Exception
+    raise signals.SUCCESS
     complaints = []
     Complaint = namedtuple('Complaint', ['data_received', 'state', 'product', 'company', 'complaint_what_happened'])
     for row in raw_complaint_data:
