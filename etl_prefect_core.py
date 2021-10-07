@@ -49,7 +49,7 @@ def parse_complaint_data(raw_complaint_data):
 def store_complaints(parsed_complaint_data):
     insert_cmd = "INSERT INTO complaint VALUES (?, ?, ?, ?, ?)"
 
-    with closing(sqlite3.connect("cfpbcomplaints.db")) as conn:
+    with closing(sqlite3.connect(DATABASE_NAME)) as conn:
         with closing(conn.cursor()) as cursor:
             cursor.executemany(insert_cmd, parsed_complaint_data)
             conn.commit()
